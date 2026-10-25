@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel TV</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg1:#2a1b3d;--bg2:#44254f;--ink:#fff4e6;--pink:#ff8fb8;--mint:#8ff0c8;--butter:#ffd98e;--body:#5a3a6e;--edge:#150d21;--muted:#d9c2ee;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){--bg1:#ffe9f3;--bg2:#e6f7ff;--ink:#3b2350;--body:#ffc2da;--edge:#3b2350;--muted:#6d4b86;--butter:#ffb94d;--pink:#ff5f9b;--mint:#2fc994}
+}
+:root[data-theme="dark"]{--bg1:#2a1b3d;--bg2:#44254f}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:'VT323','Courier New',monospace;font-size:22px;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));overflow-x:hidden;display:flex;flex-direction:column;align-items:center;padding:20px 14px 40px}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 2px,transparent 2px 4px)}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.star{position:absolute;width:6px;height:6px;background:var(--butter)}
+h1{font-family:'Press Start 2P','Courier New',monospace;font-size:clamp(18px,5vw,34px);margin:10px 0 4px;text-align:center;
+  text-shadow:4px 4px 0 var(--edge);z-index:1;letter-spacing:2px}
+h1 span{display:inline-block;color:var(--pink)}
+h1 span:nth-child(3n){color:var(--mint)}h1 span:nth-child(3n+1){color:var(--butter)}
+.sub{color:var(--muted);margin:0 0 18px;z-index:1;text-align:center}
+.stage{position:relative;width:min(760px,100%);z-index:1;perspective:900px}
+#cat{position:absolute;left:14px;top:-62px;width:84px;height:84px;z-index:3;image-rendering:pixelated}
+.tv{position:relative;background:var(--body);border:6px solid var(--edge);padding:18px 18px 14px;
+  box-shadow:8px 8px 0 var(--edge);transform-style:preserve-3d;transition:transform .15s ease-out;
+  clip-path:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px))}
+.screen{position:relative;aspect-ratio:16/9;background:#000;border:6px solid var(--edge);overflow:hidden}
+.screen iframe,.screen canvas{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+canvas{image-rendering:pixelated}
+.msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;
+  font-family:'Press Start 2P','Courier New',monospace;font-size:clamp(9px,2.2vw,14px);line-height:1.8;color:#fff;text-shadow:2px 2px 0 #000;pointer-events:none}
+.panel{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.led{width:14px;height:14px;background:#555;border:3px solid var(--edge)}
+.led.on{background:var(--mint);box-shadow:0 0 0 3px rgba(143,240,200,.35)}
+input{flex:1 1 220px;min-width:0;font:inherit;font-size:22px;padding:8px 10px;background:var(--ink);color:#2a1b3d;border:4px solid var(--edge);outline:none}
+input:focus{box-shadow:0 0 0 4px var(--pink)}
+button{font-family:'Press Start 2P','Courier New',monospace;font-size:11px;padding:12px 14px;color:var(--edge);cursor:pointer;
+  background:var(--pink);border:4px solid var(--edge);box-shadow:4px 4px 0 var(--edge)}
+button.alt{background:var(--butter)}
+button:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--edge)}
+.feet{display:flex;justify-content:space-between;padding:0 36px}
+.feet i{width:28px;height:14px;background:var(--edge)}
+.hint{color:var(--muted);font-size:20px;margin-top:22px;text-align:center;z-index:1}
+</style>
+</head>
+<body>
+<div id="stars" aria-hidden="true"></div>
+<h1 id="title" aria-label="PIXEL TV"></h1>
+<p class="sub">paste a YouTube link &amp; press play ♪</p>
+
+<div class="stage">
+  <svg id="cat" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"></svg>
+  <div class="tv" id="tv">
+    <div class="screen" id="screen">
+      <canvas id="noise" width="64" height="36"></canvas>
+      <div class="msg" id="msg">INSERT A LINK<br>TO START</div>
+    </div>
+    <div class="panel">
+      <span class="led" id="led"></span>
+      <input id="url" type="text" placeholder="https://youtu.be/…" autocomplete="off" spellcheck="false" aria-label="YouTube link">
+      <button id="play">PLAY</button>
+      <button id="stop" class="alt">OFF</button>
+    </div>
+  </div>
+  <div class="feet" aria-hidden="true"><i></i><i></i></div>
+</div>
+<p class="hint">works with videos, shorts, live streams &amp; playlists</p>
+
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.0.2/lib/anime.umd.min.js"></script>
+<script>
+(function(){
+  var A = window.anime || {};
+  var animate = A.animate, stagger = A.stagger, createTimeline = A.createTimeline;
+  var $ = function(id){return document.getElementById(id)};
+  var noOp = function(){};
+  var anim = animate || noOp;
+
+  /* ---- title letters ---- */
+  var t = $('title');
+  'PIXEL TV'.split('').forEach(function(c){
+    var s = document.createElement('span'); s.textContent = c === ' ' ? '\u00A0' : c; t.appendChild(s);
+  });
+
+  /* ---- twinkling stars ---- */
+  var st = $('stars');
+  for (var i = 0; i < 40; i++){
+    var d = document.createElement('div'); d.className = 'star';
+    d.style.left = Math.random()*100 + '%'; d.style.top = Math.random()*100 + '%';
+    st.appendChild(d);
+  }
+
+  /* ---- pixel cat sprite ---- */
+  var rows = [
+    '.K........K.',
+    'KOK......KOK',
+    'KOOKKKKKKOOK',
+    'KOOOOOOOOOOK',
+    'KOOEOOOOEOOK',
+    'KOOOOOOOOOOK',
+    'KOPOOKKOOPOK',
+    'KOOOOOOOOOOK',
+    '.KOOOOOOOOK.',
+    '..KKKKKKKK..',
+    '............',
+    '............'
+  ];
+  var pal = {K:'#150d21', O:'#ffd98e', E:'#150d21', P:'#ff8fb8'};
+  var cat = $('cat'), eyes = [];
+  rows.forEach(function(r, y){
+    r.split('').forEach(function(ch, x){
+      if (ch === '.') return;
+      var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', 1); rect.setAttribute('height', 1);
+      rect.setAttribute('fill', pal[ch]);
+      if (ch === 'E') eyes.push(rect);
+      cat.appendChild(rect);
+    });
+  });
+
+  /* ---- idle TV static ---- */
+  var cv = $('noise'), cx = cv.getContext('2d'), noiseOn = true, last = 0;
+  var colors = ['#2a1b3d','#44254f','#5a3a6e','#8a5fa8','#ffd98e','#ff8fb8'];
+  function drawNoise(ts){
+    if (!noiseOn) return;
+    if (ts - last > 90){
+      last = ts;
+      for (var y = 0; y < 36; y++) for (var x = 0; x < 64; x++){
+        cx.fillStyle = colors[(Math.random()*Math.random()*6)|0];
+        cx.fillRect(x, y, 1, 1);
+      }
+    }
+    requestAnimationFrame(drawNoise);
+  }
+  requestAnimationFrame(drawNoise);
+
+  /* ---- link parsing ---- */
+  function parse(v){
+    v = (v || '').trim();
+    var list = v.match(/[?&]list=([\w-]+)/);
+    var id = v.match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([\w-]{11})/) || v.match(/^([\w-]{11})$/);
+    if (id) return {id:id[1], list:list ? list[1] : null};
+    if (list) return {id:null, list:list[1]};
+    return null;
+  }
+
+  var screen = $('screen'), msg = $('msg'), led = $('led'), inp = $('url');
+
+  function setMsg(html){ msg.innerHTML = html; msg.style.display = html ? 'flex' : 'none'; }
+
+  function play(){
+    var p = parse(inp.value);
+    if (!p){
+      setMsg('HMM… THAT LINK<br>LOOKS WRONG');
+      anim('#tv', {translateX:[-8,8,-6,6,0], duration:300, ease:'linear'});
+      return;
+    }
+    var old = screen.querySelector('iframe'); if (old) old.remove();
+    var src = 'https://www.youtube-nocookie.com/embed/' + (p.id || 'videoseries') + '?autoplay=1&rel=0&playsinline=1' + (p.list ? '&list=' + p.list : '');
+    var f = document.createElement('iframe');
+    f.src = src; f.title = 'YouTube player';
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true; f.style.opacity = 0;
+    screen.appendChild(f);
+    setMsg('TUNING…');
+    f.addEventListener('load', function(){
+      noiseOn = false; cv.style.display = 'none'; setMsg('');
+      led.classList.add('on');
+      if (animate) animate(f, {opacity:[0,1], scaleY:[0.02,1], duration:450, ease:'outExpo'});
+      else f.style.opacity = 1;
+    });
+    try { localStorage.setItem('pixeltv:last', inp.value); } catch(e){}
+  }
+
+  function off(){
+    var f = screen.querySelector('iframe'); if (f) f.remove();
+    led.classList.remove('on'); cv.style.display = 'block';
+    if (!noiseOn){ noiseOn = true; requestAnimationFrame(drawNoise); }
+    setMsg('INSERT A LINK<br>TO START');
+  }
+
+  $('play').addEventListener('click', play);
+  $('stop').addEventListener('click', off);
+  inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') play(); });
+  try { var saved = localStorage.getItem('pixeltv:last'); if (saved) inp.value = saved; } catch(e){}
+
+  /* ---- 3D-ish tilt ---- */
+  var tv = $('tv');
+  document.addEventListener('pointermove', function(e){
+    if (e.pointerType === 'touch') return;
+    var x = (e.clientX / innerWidth - .5), y = (e.clientY / innerHeight - .5);
+    tv.style.transform = 'rotateY(' + (x*7).toFixed(2) + 'deg) rotateX(' + (-y*5).toFixed(2) + 'deg)';
+  });
+
+  /* ---- anime.js motion ---- */
+  if (!animate) return;
+  var tl = createTimeline({defaults:{ease:'outBack', duration:600}});
+  tl.add('#title span', {translateY:[-40,0], opacity:[0,1], delay:stagger(70)})
+    .add('#tv', {scale:[0.7,1], opacity:[0,1]}, '-=300')
+    .add('#cat', {translateY:[-30,0], opacity:[0,1]}, '-=300');
+
+  animate('.star', {opacity:[.1,1], scale:[.5,1.4], duration:1400, alternate:true, loop:true,
+    delay:stagger(120, {from:'random'}), ease:'inOutSine'});
+  animate('#title span', {translateY:[0,-6], duration:900, alternate:true, loop:true,
+    delay:stagger(110), ease:'inOutSine'});
+  animate('#cat', {translateY:[0,-5], duration:700, alternate:true, loop:true, ease:'steps(2)'});
+  animate(eyes, {scaleY:[1,0.1,1], duration:200, loopDelay:2600, loop:true, ease:'linear',
+    transformOrigin:'center'});
+})();
+</script>
+</body>
+</html>
